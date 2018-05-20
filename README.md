@@ -1,5 +1,5 @@
 # Factorio Headless Server on Docker
-Dockerfile with fac packed
+Dockerfile with [fac](https://github.com/mickael9/fac) packed
 ## Usage
 ### Build image
 ```bash
