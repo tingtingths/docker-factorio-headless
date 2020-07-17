@@ -1,25 +1,34 @@
 # Dockerfile for latest factorio headless server
-FROM ubuntu:17.10
+FROM python:3.8-buster as builder
 
 ENV VERSION 0.16.51
 ENV RCON_PASSWD defaultrconpassword
 
-RUN mkdir -p /app \
-    /app/data
+RUN mkdir -p /app/data/
+
+COPY requirements.txt /app/
+
+COPY sample_data_directory/ /app/data
 
 WORKDIR /app
-RUN apt-get update && apt-get -y install wget tar xz-utils
 
-# Prepare factorio headless binary
-RUN wget https://www.factorio.com/get-download/${VERSION}/headless/linux64 -O tmp.tar \
-    && tar xvf tmp.tar && rm tmp.tar
+# Prepare factorio
+RUN apt-get update && apt-get install wget \
+    && wget https://www.factorio.com/get-download/${VERSION}/headless/linux64 -O tmp.tar \
+    && tar xvf tmp.tar \
+    && rm tmp.tar \
+    && ln -s /app/data/mods /app/factorio/mods
 
-# Install fac
-RUN apt-get update && apt-get -y install python3 python3-pip
-RUN pip3 install fac-cli
-RUN ln -s /app/data/mods /app/factorio/mods
-RUN mkdir -p ~/.config/fac/
-RUN echo ' \
+FROM python:3.8-slim-buster as base
+
+COPY --from=builder /app/ /app/
+
+WORKDIR /app
+
+# setup
+RUN pip install -r requirements.txt \
+    && mkdir -p ~/.config/fac/ \
+    && echo ' \
     [paths] \
     data-path = /app/factorio/data \
     write-path = /app/factorio \

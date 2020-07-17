@@ -10,13 +10,13 @@ docker build -t my_factorio_image .
 
 ### Start container with the image
 ```bash
-# Mount the /app/data with sample_data_directory
+# You could start with using the sample_data_directory/ to mount into /app/data
 docker run -d --name factorio \
 	--restart=always \
 	-p 34197:34197/udp \
 	-p 27015:27015 \
 	-e "RCON_PASSWD=somepassword" \
-	-v <path/to/factorio/data/folder>:/app/data:Z \
+	-v <path/to/factorio/data/folder>:/app/data \
 	my_factorio_image
 ```
 
