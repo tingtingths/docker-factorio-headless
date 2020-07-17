@@ -1,7 +1,7 @@
 # Dockerfile for latest factorio headless server
 FROM python:3.8-buster as builder
 
-ENV VERSION 0.16.51
+ENV VERSION 0.18.36
 ENV RCON_PASSWD defaultrconpassword
 
 RUN mkdir -p /app/data/
