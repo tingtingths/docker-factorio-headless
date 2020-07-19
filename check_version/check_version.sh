@@ -16,5 +16,5 @@ if [ "$version" != "$latest_version" ]; then
     git add Dockerfile
     git commit -m 'Version '"$latest_version"
     git tag "$latest_version"
-    git push --follow-tags
+    git push && git push --tags
 fi
