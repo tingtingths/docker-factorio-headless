@@ -6,6 +6,11 @@ cd $REPO || exit 1
 
 latest_version=$(/usr/bin/env python3 $REPO/check_version/get_factorio_version.py)
 
+if [ ! "$latest_version" ]; then
+	echo 'Cannot get latest version...'
+	exit 1
+fi
+
 #git clean -f && git checkout -- .
 # check git version
 version=$(sed -n -E 's|ENV VERSION (.+)|\1|p' Dockerfile)
