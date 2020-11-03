@@ -3,7 +3,12 @@ Dockerfile with [fac](https://github.com/mickael9/fac) packed
 
 ## Usage
 
-### Build image
+### Pull image
+```bash
+docker pull tingtingths/factorio
+```
+
+### Or build it yourself
 ```bash
 docker build -t my_factorio_image .
 ```
