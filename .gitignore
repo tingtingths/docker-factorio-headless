@@ -1,1 +1,9 @@
 .idea/
+
+sample_data_directory/
+
+# Except
+!sample_data_directory/.config/fac/config.ini
+!sample_data_directory/config/config.ini
+!sample_data_directory/saves/save.zip
+!sample_data_directory/mods/.gitignore
