@@ -1,39 +1,59 @@
 # Dockerfile for latest factorio headless server
-FROM python:3.8-buster as builder
 
-ENV VERSION 1.0.0
-ENV RCON_PASSWD defaultrconpassword
+ARG FACTORIO_VERSION=1.0.0
+ARG FH_DOWNLOAD_URL=https://www.factorio.com/get-download/${FACTORIO_VERSION}/headless/linux64
+# https://github.com/sparr/fac/pull/8
+ARG FAC_REPO=https://github.com/lowne/fac
+ARG FH_UID=1000
 
-RUN mkdir -p /app/data/
+FROM python:slim AS base
+ARG FH_UID
+RUN useradd --comment "factorio" --create-home --home-dir /data --user-group --uid ${FH_UID} factorio
 
-COPY requirements.txt /app/
+FROM base AS build
+ARG FH_UID
+ARG FH_DOWNLOAD_URL
+ARG FAC_REPO
 
-COPY sample_data_directory/ /app/data
+RUN apt-get -y update && apt-get install -y --no-install-recommends wget xz-utils git
 
-WORKDIR /app
+############### Download factorio
+WORKDIR /factorio
+RUN wget ${FH_DOWNLOAD_URL} -O tmp.tar \
+ && tar xvf tmp.tar --strip-components=1 \
+ && rm tmp.tar
 
-# Prepare factorio
-RUN apt-get update && apt-get install wget \
-    && wget https://www.factorio.com/get-download/${VERSION}/headless/linux64 -O tmp.tar \
-    && tar xvf tmp.tar \
-    && rm tmp.tar \
-    && ln -s /app/data/mods /app/factorio/mods
+############### Download fac
+RUN git clone --depth=1 ${FAC_REPO} fac
 
-FROM python:3.8-slim-buster as base
 
-COPY --from=builder /app/ /app/
+FROM base AS deploy
+ARG FH_UID
 
-WORKDIR /app
+COPY --from=build --chown=${FH_UID} /factorio /factorio
+############## install fac (as root)
+RUN pip3 install -e /factorio/fac
 
-# setup
-RUN pip install -r requirements.txt \
-    && mkdir -p ~/.config/fac/ \
-    && echo ' \
-    [paths] \
-    data-path = /app/factorio/data \
-    write-path = /app/factorio \
-    ' > ~/.config/fac/config.ini
+USER ${FH_UID}
+RUN echo "use-system-read-write-data-directories=false"\\n"config-path=/data/config" > /factorio/config-path.cfg \
+ && mkdir -p /data/config \
+ && echo "[path]"\\n"read-data=/factorio/data"\\n"write-data=/data" > /data/config/config.ini \
+ && chmod a+w /data/config/config.ini
+
+############## install tools
+COPY --chown=${FH_UID} listmods.py /usr/local/bin/listmods
+COPY --chown=${FH_UID} start.sh /usr/local/bin/start-server
+
+############## setup datadir (redundant if mounting /data)
+COPY --chown=${FH_UID} sample_data_directory/ /data
+RUN mkdir -p /data/.config/fac \
+ && echo "[paths]"\\n"data-path=/factorio/data"\\n"write-path=/data" > /data/.config/fac/config.ini
+
+ENV RCON_PASSWD=
+ENV SKIP_AUTOMODS=
+ENV SAVEGAME="save"
+
+CMD start-server ${SAVEGAME}
 
 EXPOSE 34197/udp 27015
 
-CMD ["/app/factorio/bin/x64/factorio", "--start-server", "/app/data/save.zip", "--server-settings", "/app/data/server-settings.json", "--rcon-port", "27015", "--rcon-password", "${RCON_PASSWD}", "--mod-directory", "/app/data/mods"]
